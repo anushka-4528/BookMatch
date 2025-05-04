@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "665839987988",
+    "project_id": "book-swipe-83825",
+    "storage_bucket": "book-swipe-83825.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:665839987988:android:f0153564beb48701b16601",
+        "android_client_info": {
+          "package_name": "com.company.bookSwipe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL66fjOI0Qei9hNTmryiHfPpaVQTRuiv8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:665839987988:android:a95d6247e1b8ee08b16601",
+        "android_client_info": {
+          "package_name": "com.example.book_swap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL66fjOI0Qei9hNTmryiHfPpaVQTRuiv8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
