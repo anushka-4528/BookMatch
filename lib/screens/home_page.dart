@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'book_card.dart';
-import '../models/book.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/book.dart'; // Updated import to use BookModel
 import 'match_popup.dart';
 import '../widgets/gradient_background.dart';
 import '../widgets/action_buttons.dart';
 import '../widgets/gradient_button_widget.dart';
+import 'matches_screen.dart';
+import 'add_book_screen.dart';
+import 'my_books_screen.dart';
+import 'trades_screen.dart';
+import 'settings.dart';
+import 'help_support.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,6 +28,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   int _currentIndex = 0;
   late AnimationController _animationController;
   bool _showSwipeView = true;
+  bool _isLoading = true;
+  List<BookModel> books = []; // Changed to BookModel
 
   // Define the deep lilac color palette
   static const Color lilacPrimary = Color(0xFF6A0DAD); // Deeper lilac
@@ -28,33 +37,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   static const Color lilacDark = Color(0xFF4A0873);
   static const Color accentColor = Color(0xFFFF8FB1); // Light pink accent
   static const Color textColor = Color(0xFF2E1A47);
-
-  final List<Book> books = [
-    Book(
-      id: '1',
-      title: 'Dune',
-      imageUrl: 'assets/images/dune_book.jpeg',
-      condition: 'Good',
-      genre: 'Science Fiction',
-      description: 'Set on the desert planet Arrakis, Dune is the story of the boy Paul Atreides, heir to a noble family tasked with ruling an inhospitable world where the only thing of value is the "spice" melange, a drug capable of extending life and enhancing consciousness. When his family is betrayed, the destruction of Pauls family sets him on a journey toward a destiny greater than he could ever have imagined. Dune tackles complex themes of politics, religion, ecology, technology, and human emotion as the fate of characters are decided against a backdrop of a harsh and merciless universe.',
-    ),
-    Book(
-      id: '2',
-      title: 'Gone Girl',
-      imageUrl: 'assets/images/gone_girl_book.webp',
-      condition: 'Excellent',
-      genre: 'Mystery',
-      description: 'On a warm summer morning in North Carthage, Missouri, it is Nick and Amy Dunnes fifth wedding anniversary. Presents are being wrapped and reservations are being made when Nicks clever and beautiful wife disappears. Under mounting pressure from the police and the media—as well as Amys fiercely doting parents—the town golden boy parades an endless series of lies, deceits, and inappropriate behavior. Nick is oddly evasive, and hes definitely bitter—but is he really a killer? As the cops close in, every couple in town is soon wondering how well they know the one that they love.',
-    ),
-    Book(
-      id: '3',
-      title: 'The Hobbit',
-      imageUrl: 'assets/images/hobbit_book.jpeg',
-      condition: 'Fair',
-      genre: 'Fantasy',
-      description: 'Bilbo Baggins is a hobbit who enjoys a comfortable, unambitious life, rarely traveling any farther than his pantry or cellar. But his contentment is disturbed when the wizard Gandalf and a company of dwarves arrive on his doorstep one day to whisk him away on an adventure. They have launched a plot to raid the treasure hoard guarded by Smaug the Magnificent, a large and very dangerous dragon. Bilbo reluctantly joins their quest, unaware that on his journey to the Lonely Mountain he will encounter both a magic ring and a frightening creature known as Gollum.',
-    ),
-  ];
 
   final CardSwiperController controller = CardSwiperController();
 
@@ -65,6 +47,81 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
+    // Load books from Firestore
+    _loadBooks();
+  }
+
+  Future<void> _loadBooks() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Firestore query to get available books
+      final snapshot = await FirebaseFirestore.instance
+          .collection('books')
+          .where('available', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+
+      // Convert to BookModel objects
+      final loadedBooks = snapshot.docs.map((doc) => BookModel.fromDocument(doc)).toList();
+
+      setState(() {
+        books = loadedBooks;
+        _isLoading = false;
+      });
+    } catch (e) {
+      // For demo/fallback, use mock books
+      setState(() {
+        books = _getMockBooks();
+        _isLoading = false;
+      });
+      print('Error loading books: $e');
+    }
+  }
+
+  List<BookModel> _getMockBooks() {
+    return [
+      BookModel(
+        id: '1',
+        title: 'Dune',
+        author: 'Frank Herbert',
+        ownerId: 'user123',
+        imageUrl: 'assets/images/dune_book.jpeg',
+        condition: 'Good',
+        genre: 'Science Fiction',
+        description: 'Set on the desert planet Arrakis, Dune is the story of the boy Paul Atreides, heir to a noble family tasked with ruling an inhospitable world where the only thing of value is the "spice" melange, a drug capable of extending life and enhancing consciousness. When his family is betrayed, the destruction of Paul\'s family sets him on a journey toward a destiny greater than he could ever have imagined.',
+        available: true,
+        createdAt: Timestamp.now(),
+      ),
+      BookModel(
+        id: '2',
+        title: 'Gone Girl',
+        author: 'Gillian Flynn',
+        ownerId: 'user456',
+        imageUrl: 'assets/images/gone_girl_book.webp',
+        condition: 'Excellent',
+        genre: 'Mystery',
+        description: 'On a warm summer morning in North Carthage, Missouri, it is Nick and Amy Dunne\'s fifth wedding anniversary. Presents are being wrapped and reservations are being made when Nick\'s clever and beautiful wife disappears. Under mounting pressure from the police and the media—as well as Amy\'s fiercely doting parents—the town golden boy parades an endless series of lies, deceits, and inappropriate behavior.',
+        available: true,
+        createdAt: Timestamp.now(),
+      ),
+      BookModel(
+        id: '3',
+        title: 'The Hobbit',
+        author: 'J.R.R. Tolkien',
+        ownerId: 'user789',
+        imageUrl: 'assets/images/hobbit_book.jpeg',
+        condition: 'Fair',
+        genre: 'Fantasy',
+        description: 'Bilbo Baggins is a hobbit who enjoys a comfortable, unambitious life, rarely traveling any farther than his pantry or cellar. But his contentment is disturbed when the wizard Gandalf and a company of dwarves arrive on his doorstep one day to whisk him away on an adventure. They have launched a plot to raid the treasure hoard guarded by Smaug the Magnificent, a large and very dangerous dragon.',
+        available: true,
+        createdAt: Timestamp.now(),
+      ),
+    ];
   }
 
   @override
@@ -108,117 +165,127 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       _selectedIndex = index;
       _showSwipeView = index == 0;
     });
-  }
 
-  // Enhanced drawer with lighter colors
-  Widget _buildDrawer() {
+    // Navigate to matches screen when chat tab is selected
+    if (index == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const MatchesScreen(),
+        ),
+      ).then((_) {
+        // When returning from matches screen, go back to swipe view
+        setState(() {
+          _selectedIndex = 0;
+          _showSwipeView = true;
+        });
+      });
+    }
+  }
+  Widget _buildDrawer(BuildContext context) {
     return Drawer(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Color(0xFFF9F5FF)],  // Lighter background
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: lilacLight.withOpacity(0.2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: const [
+                Text(
+                  'Hey there, book lover 📚',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5A4FCF),
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Ready to swap stories today?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF8A84B7),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    lilacPrimary.withOpacity(0.85),  // Lighter lilac primary
-                    lilacDark.withOpacity(0.85),     // Lighter lilac dark
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Colors.white, Colors.white],  // Brighter white
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'BookMatch',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Hello, Book Lover!\nFind your next favorite book',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,  // Pure white for better visibility
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDrawerItem(Icons.home, 'Home', () {
-                    Navigator.pop(context);
-                  }),
-                  _buildDrawerItem(Icons.favorite, 'My Matches', () {
-                    Navigator.pop(context);
-                  }),
-                  _buildDrawerItem(Icons.book, 'My Books', () {
-                    Navigator.pop(context);
-                    // Navigate to My Books page if needed
-                  }),
-                  const Divider(color: Color(0xFFE9DDFF)),  // Lighter divider color
-                  _buildDrawerItem(Icons.settings, 'Settings', () {
-                    Navigator.pop(context);
-                  }),
-                  _buildDrawerItem(Icons.help_outline, 'Help & Support', () {
-                    Navigator.pop(context);
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ),
+          _buildDrawerItem(Icons.home, 'Home', () {
+            Navigator.pop(context);
+          }),
+          _buildDrawerItem(Icons.favorite, 'My Matches', () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MatchesScreen()),
+            );
+          }),
+          _buildDrawerItem(Icons.book, 'My Books', () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyBooksScreen()),
+            );
+          }),
+          _buildDrawerItem(Icons.swap_horiz, 'My Trades', () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TradesScreen()),
+            );
+          }),
+          const Divider(color: Color(0xFFEEE6FF)),
+          _buildDrawerItem(Icons.settings, 'Settings', () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            );
+          }),
+          _buildDrawerItem(Icons.help_outline, 'Help & Support', () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HelpSupportPage()),
+            );
+          }),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop(); // Close drawer
+              await FirebaseAuth.instance.signOut(); // Sign out
+              Navigator.of(context).pushReplacementNamed('/login'); // Navigate to login page
+            },
+            child: const Text('Sign Out'),
+          ),
+        ],
       ),
     );
   }
-
-  // Helper method to create consistent drawer items with a lighter feel
   Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: lilacPrimary.withOpacity(0.85)),  // Slightly lighter icon
+      leading: Icon(icon, color: lilacPrimary.withOpacity(0.8)),
       title: Text(
         title,
         style: TextStyle(
-          color: textColor.withOpacity(0.9),  // Slightly lighter text
+          color: textColor.withOpacity(0.85),
           fontWeight: FontWeight.w500,
         ),
       ),
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),  // More padding
-      hoverColor: lilacLight.withOpacity(0.3),  // Lighter hover effect
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      hoverColor: lilacLight.withOpacity(0.25),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      drawer: _buildDrawer(),
+      drawer: _buildDrawer(context),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -261,16 +328,32 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat, color: lilacPrimary),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.9),
+                boxShadow: [
+                  BoxShadow(
+                    color: lilacPrimary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.person, color: lilacPrimary, size: 24),
+            ),
             onPressed: () {
-              // handle action
+              // handle profile action
             },
           ),
         ],
       ),
       body: GradientBackground(
         child: SafeArea(
-          child: _showSwipeView ? _buildSwipeView() : _buildChatView(),
+          child: _isLoading
+              ? _buildLoadingView()
+              : (_showSwipeView ? _buildSwipeView() : _buildChatView()),
         ),
       ),
 
@@ -318,7 +401,79 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
+  Widget _buildLoadingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: lilacPrimary,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Loading books...',
+            style: TextStyle(
+              color: lilacDark,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSwipeView() {
+    if (books.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.book_outlined,
+              size: 80,
+              color: lilacPrimary.withOpacity(0.7),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No books available',
+              style: TextStyle(
+                color: lilacDark,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'There are no books to display at the moment. Try again later.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: textColor.withOpacity(0.7),
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: _loadBooks,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: lilacPrimary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         const SizedBox(height: 10),
@@ -374,7 +529,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildBookCard(Book book, int index) {
+  Widget _buildBookCard(BookModel book, int index) {
     // Check if this is the current card
     bool isCurrentCard = _currentIndex == index;
 
@@ -410,9 +565,40 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset(
-                      book.imageUrl,
+                    // Check if the image is from the network or asset
+                    book.imageUrl != null && book.imageUrl!.startsWith('http')
+                        ? Image.network(
+                      book.imageUrl!,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          'assets/images/default_book.jpg',
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    )
+                        : book.imageUrl != null
+                        ? Image.asset(
+                      book.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: lilacLight,
+                          child: Icon(
+                            Icons.book,
+                            size: 80,
+                            color: lilacPrimary,
+                          ),
+                        );
+                      },
+                    )
+                        : Container(
+                      color: lilacLight,
+                      child: Icon(
+                        Icons.book,
+                        size: 80,
+                        color: lilacPrimary,
+                      ),
                     ),
                     // Gradient overlay
                     Container(
@@ -452,20 +638,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: lilacPrimary.withOpacity(0.8),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              book.genre,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: lilacPrimary.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  book.genre,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'By ${book.author}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
