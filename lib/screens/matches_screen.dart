@@ -1,379 +1,475 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/user_model.dart';
+import 'dart:developer' as developer;
 import '../services/chat_service.dart';
-import '../utils/theme.dart';
+import '../models/chat_model.dart';
+import '../models/user_model.dart';
 import 'chat_screen.dart';
-import '../models/message_model.dart';
 
 class MatchesScreen extends StatefulWidget {
-  const MatchesScreen({Key? key}) : super(key: key);
+  const MatchesScreen({super.key});
 
   @override
-  _MatchesScreenState createState() => _MatchesScreenState();
+  State<MatchesScreen> createState() => _MatchesScreenState();
 }
 
-class _MatchesScreenState extends State<MatchesScreen> with SingleTickerProviderStateMixin {
+class _MatchesScreenState extends State<MatchesScreen> {
+  List<ChatModel> _chats = [];
+  bool _isLoading = true;
   final ChatService _chatService = ChatService();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  late TabController _tabController;
+  
+  // Colors
+  static const Color primaryColor = Color(0xFF9932CC);
+  static const Color lightLilac = Color(0xFFE6D9F2);
+  static const Color lilacDark = Color(0xFF4A0873);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _loadChats();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Future<void> _loadChats() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception('No user logged in');
+      }
+
+      // Fetch active chats for the current user
+      final chats = await _chatService.getActiveChatsForUser(currentUser.uid);
+
+      if (mounted) {
+        setState(() {
+          _chats = chats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      developer.log('Error loading chats',
+          name: 'BookMatch.MatchesScreen',
+          error: e,
+          level: 1000 // ERROR level
+      );
+
+      if (mounted) {
+        setState(() {
+          _chats = [];
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load matches: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = _auth.currentUser!.uid;
-
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: primaryColor,
+        elevation: 0,
         title: const Text(
-          'Your Matches',
+          'My Matches',
           style: TextStyle(
-            fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            fontSize: 22,
           ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'All Matches'),
-            Tab(text: 'Recent Chats'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // All Matches Tab
-          StreamBuilder<QuerySnapshot>(
-            stream: _chatService.getUserMatches(currentUserId),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return _buildEmptyState('No matches yet', 'Find book lovers with similar interests and start trading!');
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                itemCount: snapshot.data!.docs.length,
-                itemBuilder: (context, index) {
-                  final doc = snapshot.data!.docs[index];
-                  final UserModel user = UserModel.fromDocument(doc);
-                  return _buildUserListTile(user, currentUserId);
-                },
-              );
-            },
-          ),
-
-          // Recent Chats Tab
-          StreamBuilder<QuerySnapshot>(
-            stream: _chatService.getRecentChats(currentUserId),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return _buildEmptyState('No recent chats', 'Start messaging your matches to see them here!');
-              }
-
-              final chats = snapshot.data!.docs;
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                itemCount: chats.length,
-                itemBuilder: (context, index) {
-                  final chatData = chats[index].data() as Map<String, dynamic>;
-                  final String otherUserId = chatData['users'].firstWhere((id) => id != currentUserId);
-                  final String lastMessage = chatData['lastMessage'] ?? '';
-                  final Timestamp lastMessageTime = chatData['lastMessageTime'] ?? Timestamp.now();
-
-                  return FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
-                    builder: (context, userSnapshot) {
-                      if (!userSnapshot.hasData) {
-                        return const ListTile(title: Text('Loading...'));
-                      }
-
-                      final UserModel user = UserModel.fromDocument(userSnapshot.data!); // ✅ pass DocumentSnapshot
-
-                      return _buildChatListTile(
-                        user,
-                        currentUserId,
-                        lastMessage,
-                        lastMessageTime.toDate(),
-                      );
-                    },
-                  );
-                },
-              );
-            },
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadChats,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildEmptyState(String title, String subtitle) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
         children: [
-          Icon(
-            Icons.people_outline,
-            size: 100,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
+          // Statistics bar
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [primaryColor, lightLilac],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  count: _chats.length.toString(),
+                  label: 'Matches',
+                  icon: Icons.favorite,
+                ),
+                _buildStatItem(
+                  count: '0',
+                  label: 'Completed',
+                  icon: Icons.check_circle,
+                ),
+                _buildStatItem(
+                  count: '0',
+                  label: 'Pending',
+                  icon: Icons.pending,
+                ),
+              ],
+            ),
+          ),
+          
+          // Matches list
+          Expanded(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: primaryColor,
+                    ),
+                  )
+                : _buildMatchesList(),
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: primaryColor,
+        child: const Icon(Icons.swap_horiz),
+        onPressed: () {
+          Navigator.pop(context); // Go back to swipe screen
+        },
+      ),
     );
   }
-
-  Widget _buildUserListTile(UserModel user, String currentUserId) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundImage: user.photoUrl?.isNotEmpty == true
-              ? NetworkImage(user.photoUrl!)
-              : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
+  
+  Widget _buildStatItem({
+    required String count,
+    required String label,
+    required IconData icon,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: Colors.white,
+          size: 20,
         ),
-        title: Text(
-          user.name,
+        const SizedBox(height: 4),
+        Text(
+          count,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
+            color: Colors.white,
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              'Book interests: ${user.bookGenres.take(2).join(", ")}' +
-                  (user.bookGenres.length > 2 ? '...' : ''),
-              style: TextStyle(color: Colors.grey[700]),
-            ),
-          ],
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.white,
+          ),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.chat_bubble_outline,
-                color: AppTheme.primaryColor,
+      ],
+    );
+  }
+
+  Widget _buildMatchesList() {
+    if (_chats.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 12),
+      itemCount: _chats.length,
+      itemBuilder: (context, index) {
+        final chat = _chats[index];
+        return _buildMatchCard(chat);
+      },
+    );
+  }
+
+  Widget _buildMatchCard(ChatModel chat) {
+    // Add null check to prevent range errors
+    String displayName = "User";
+    String initial = "U";
+    
+    if (chat.otherUserName != null && chat.otherUserName.isNotEmpty) {
+      displayName = chat.otherUserName;
+      initial = chat.otherUserName.isNotEmpty ? chat.otherUserName[0].toUpperCase() : "U";
+    }
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Dismissible(
+        key: Key(chat.chatId),
+        background: Container(
+          padding: const EdgeInsets.only(right: 20),
+          alignment: Alignment.centerRight,
+          color: Colors.red,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                'Unmatch',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatScreen(
-                      receiverId: user.id,
-                      receiverName: user.name,
-                      receiverPhotoUrl: user.photoUrl ?? '',
+              SizedBox(width: 8),
+              Icon(
+                Icons.delete,
+                color: Colors.white,
+              ),
+            ],
+          ),
+        ),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (direction) async {
+          return await _showUnmatchConfirmation(chat);
+        },
+        onDismissed: (direction) {
+          setState(() {
+            _chats.removeWhere((c) => c.chatId == chat.chatId);
+          });
+        },
+        child: InkWell(
+          onTap: () => _navigateToChat(chat),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 32,
+                      backgroundColor: lightLilac,
+                      child: Text(
+                        initial,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: lilacDark,
+                        ),
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            PopupMenuButton(
-              icon: const Icon(Icons.more_vert),
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'unmatch',
-                  child: Row(
-                    children: const [
-                      Icon(Icons.close, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Unmatch'),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: lilacDark,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'About: ${chat.bookTitle}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _navigateToChat(chat),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.chat_bubble_outline, size: 16),
+                                SizedBox(width: 4),
+                                Text('Chat'),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: () => _showUnmatchConfirmation(chat),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Text('Unmatch'),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ],
-              onSelected: (value) async {
-                if (value == 'unmatch') {
-                  // Show confirmation dialog
-                  final result = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Unmatch User'),
-                      content: Text('Are you sure you want to unmatch with ${user.name}? This action cannot be undone.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('CANCEL'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text(
-                            'UNMATCH',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (result == true) {
-                    await _chatService.unmatchUsers(currentUserId, user.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Unmatched with ${user.name}')),
-                    );
-                  }
-                }
-              },
             ),
-          ],
+          ),
         ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                receiverId: user.id,
-                receiverName: user.name,
-                receiverPhotoUrl: user.photoUrl ?? '',
-              ),
-            ),
-          );
-        },
       ),
     );
   }
 
-  Widget _buildChatListTile(UserModel user, String currentUserId, String lastMessage, DateTime lastMessageTime) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(lastMessageTime.year, lastMessageTime.month, lastMessageTime.day);
-
-    String timeString;
-    if (today == messageDate) {
-      timeString = '${lastMessageTime.hour.toString().padLeft(2, '0')}:${lastMessageTime.minute.toString().padLeft(2, '0')}';
-    } else if (today.difference(messageDate).inDays == 1) {
-      timeString = 'Yesterday';
-    } else {
-      timeString = '${lastMessageTime.day}/${lastMessageTime.month}/${lastMessageTime.year}';
+  void _navigateToChat(ChatModel chat) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          matchedUser: UserModel(
+            id: chat.otherUserId,
+            name: chat.otherUserName,
+            email: '',
+          ),
+          chatId: chat.chatId,
+          bookTitle: chat.bookTitle,
+        ),
+      ),
+    ).then((_) {
+      // Refresh the list when returning from chat
+      _loadChats();
+    });
+  }
+  
+  Future<bool> _showUnmatchConfirmation(ChatModel chat) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unmatch Confirmation'),
+        content: Text(
+          'Are you sure you want to unmatch with ${chat.otherUserName}? This action cannot be undone.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Unmatch'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result == true) {
+      // TODO: Implement actual unmatch functionality with ChatService
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unmatched with ${chat.otherUserName}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return true;
     }
+    return false;
+  }
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Stack(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundImage: user.photoUrl?.isNotEmpty == true
-                  ? NetworkImage(user.photoUrl!)
-                  : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: lightLilac,
+              shape: BoxShape.circle,
             ),
-            if (user.isOnline)
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                user.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+            child: Icon(
+              Icons.people_outline,
+              size: 60,
+              color: primaryColor,
             ),
-            Text(
-              timeString,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'No matches yet',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: lilacDark,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'Swipe right on books to find matches with other users!',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
+                fontSize: 16,
+                color: Colors.grey[700],
               ),
             ),
-          ],
-        ),
-        subtitle: Text(
-          lastMessage.length > 40 ? lastMessage.substring(0, 40) + '...' : lastMessage,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.grey[700]),
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                receiverId: user.id,
-                receiverName: user.name,
-                receiverPhotoUrl: user.photoUrl ?? '',
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context); // Go back to swipe screen
+            },
+            icon: const Icon(Icons.swap_horiz),
+            label: const Text('Find Matches'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import 'signup.dart';
+import '../../utils/theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,13 +67,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final deepLilac = Color(0xFF9D6B9D);
-    final lilac = Color(0xFFC8A2C8);
-    final lightLilac = Color(0xFFE6D7E6);
-    final bgColor = Color(0xFFF5F0F7);
-
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: AppTheme.lilacLight,
       body: Stack(
         children: [
           SafeArea(
@@ -88,36 +84,30 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          gradient: AppTheme.headerGradient,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: deepLilac.withOpacity(0.2),
+                              color: AppTheme.primaryColor.withOpacity(0.2),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
                           ],
                         ),
                         child: Center(
-                          child: Icon(Icons.auto_stories, size: 50, color: deepLilac),
+                          child: Icon(Icons.auto_stories, size: 50, color: Colors.white),
                         ),
                       ),
                       SizedBox(height: 30),
                       Text(
                         "BookMatch",
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: deepLilac,
-                          letterSpacing: 1.2,
-                        ),
+                        style: AppTheme.headingStyle.copyWith(fontSize: 32, letterSpacing: 1.2),
                       ),
                       SizedBox(height: 12),
                       Text(
                         "Your personal literary journey",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
+                        style: AppTheme.bodyStyle.copyWith(
+                          color: Colors.white.withOpacity(0.85),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -128,13 +118,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: lilac.withOpacity(0.15),
-                              blurRadius: 20,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
+                          boxShadow: AppTheme.cardShadow,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(28),
@@ -146,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   controller: _email,
                                   decoration: InputDecoration(
                                     labelText: "Email",
-                                    prefixIcon: Icon(Icons.email_outlined, color: lilac),
+                                    prefixIcon: Icon(Icons.email_outlined, color: AppTheme.lilacLight),
                                   ),
                                   validator: (val) => val!.contains('@') ? null : "Enter valid email",
                                 ),
@@ -156,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   obscureText: _obscurePassword,
                                   decoration: InputDecoration(
                                     labelText: "Password",
-                                    prefixIcon: Icon(Icons.lock_outline, color: lilac),
+                                    prefixIcon: Icon(Icons.lock_outline, color: AppTheme.lilacLight),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscurePassword ? Icons.visibility : Icons.visibility_off,
@@ -173,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   alignment: Alignment.centerRight,
                                   child: TextButton(
                                     onPressed: () {},
-                                    child: Text("Forgot Password?", style: TextStyle(color: deepLilac)),
+                                    child: Text("Forgot Password?", style: TextStyle(color: AppTheme.primaryColor)),
                                   ),
                                 ),
                                 SizedBox(height: 20),
@@ -183,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   child: ElevatedButton(
                                     onPressed: _loading ? null : _login,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: deepLilac,
+                                      backgroundColor: AppTheme.primaryColor,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(15),
@@ -215,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             child: Text(
                               "Sign Up",
                               style: TextStyle(
-                                color: deepLilac,
+                                color: AppTheme.primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

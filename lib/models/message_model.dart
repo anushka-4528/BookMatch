@@ -3,11 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum MessageType {
   text,
   image,
-  meetupProposal,
+  system,
   meetupResponse,
+  suggestion,
+  // Add other types as needed
 }
 
-class Message {
+class MessageModel {
   final String id;
   final String senderId;
   final String receiverId;
@@ -17,7 +19,7 @@ class Message {
   final Map<String, dynamic>? metadata;
   final bool isRead;
 
-  Message({
+  MessageModel({
     required this.id,
     required this.senderId,
     required this.receiverId,
@@ -28,43 +30,67 @@ class Message {
     this.isRead = false,
   });
 
-  factory Message.fromMap(Map<String, dynamic> map, String id) {
-    return Message(
-      id: id,
-      senderId: map['senderId'] ?? '',
-      receiverId: map['receiverId'] ?? '',
-      text: map['text'] ?? '',
-      timestamp: map['timestamp'] ?? Timestamp.now(),
-      type: _getMessageTypeFromString(map['type'] ?? 'text'),
-      metadata: map['metadata'],
-      isRead: map['isRead'] ?? false,
+  // Convert MessageType string to enum
+  static MessageType _stringToMessageType(String type) {
+    switch (type) {
+      case 'text':
+        return MessageType.text;
+      case 'image':
+        return MessageType.image;
+      case 'system':
+        return MessageType.system;
+      case 'meetupResponse':
+        return MessageType.meetupResponse;
+        case 'suggestion':
+        return MessageType.suggestion;
+      default:
+        return MessageType.text;
+    }
+  }
+
+  // Convert MessageType enum to string
+  static String _messageTypeToString(MessageType type) {
+    switch (type) {
+      case MessageType.text:
+        return 'text';
+      case MessageType.image:
+        return 'image';
+      case MessageType.system:
+        return 'system';
+      case MessageType.meetupResponse:
+        return 'meetupResponse';
+      case MessageType.suggestion:
+        return 'suggestion';
+      default:
+        return 'text';
+    }
+  }
+
+  // Create a MessageModel from a Firestore document
+  factory MessageModel.fromDocument(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return MessageModel(
+      id: doc.id,
+      senderId: data['senderId'] ?? '',
+      receiverId: data['receiverId'] ?? '',
+      text: data['text'] ?? '',
+      timestamp: data['timestamp'] ?? Timestamp.now(),
+      type: _stringToMessageType(data['type'] ?? 'text'),
+      metadata: data['metadata'],
+      isRead: data['isRead'] ?? false,
     );
   }
 
+  // Convert the MessageModel to a Map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'senderId': senderId,
       'receiverId': receiverId,
       'text': text,
       'timestamp': timestamp,
-      'type': type.toString().split('.').last,
+      'type': _messageTypeToString(type),
       'metadata': metadata,
       'isRead': isRead,
     };
-  }
-
-  static MessageType _getMessageTypeFromString(String typeStr) {
-    switch (typeStr) {
-      case 'text':
-        return MessageType.text;
-      case 'image':
-        return MessageType.image;
-      case 'meetupProposal':
-        return MessageType.meetupProposal;
-      case 'meetupResponse':
-        return MessageType.meetupResponse;
-      default:
-        return MessageType.text;
-    }
   }
 }

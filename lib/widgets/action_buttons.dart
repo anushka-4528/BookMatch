@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 
 class ActionButtons extends StatelessWidget {
-  final VoidCallback onSkip;
+  final VoidCallback onNope;
   final VoidCallback onLike;
-  final VoidCallback onInfo;
+  final VoidCallback onSuperLike;
 
   const ActionButtons({
-    Key? key,
-    required this.onSkip,
+    super.key,
+    required this.onNope,
     required this.onLike,
-    required this.onInfo,
-  }) : super(key: key);
-
-  static const Color lilacPrimary = Color(0xFF9D54C2);
+    required this.onSuperLike,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,46 +19,42 @@ class ActionButtons extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildCircleButton(
-            onTap: onSkip,
+          _buildActionButton(
+            onPressed: onNope,
             icon: Icons.close,
             color: Colors.red,
-            size: 64,
-            iconSize: 30,
+            size: 60,
           ),
-          _buildCircleButton(
-            onTap: onInfo,
-            icon: Icons.info_outline,
+          _buildActionButton(
+            onPressed: onSuperLike,
+            icon: Icons.star,
             color: Colors.blue,
             size: 48,
-            iconSize: 24,
           ),
-          _buildCircleButton(
-            onTap: onLike,
+          _buildActionButton(
+            onPressed: onLike,
             icon: Icons.favorite,
-            color: lilacPrimary,
-            size: 64,
-            iconSize: 30,
+            color: Colors.green,
+            size: 60,
           ),
         ],
       ),
     );
   }
 
-  // Custom circle button builder to avoid code duplication
-  Widget _buildCircleButton({
-    required VoidCallback onTap,
+  Widget _buildActionButton({
+    required VoidCallback onPressed,
     required IconData icon,
     required Color color,
     required double size,
-    required double iconSize,
   }) {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withOpacity(0.2),
             blurRadius: 10,
             spreadRadius: 2,
           ),
@@ -69,23 +63,14 @@ class ActionButtons extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: onPressed,
           customBorder: const CircleBorder(),
-          child: Container(
-            height: size,
-            width: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              border: Border.all(
-                color: color,
-                width: 2,
-              ),
-            ),
+          child: Padding(
+            padding: EdgeInsets.all(size * 0.2),
             child: Icon(
               icon,
+              size: size * 0.5,
               color: color,
-              size: iconSize,
             ),
           ),
         ),

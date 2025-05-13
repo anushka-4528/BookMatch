@@ -2,57 +2,54 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Colors
-  static const Color primaryColor = Color(0xFFD8CCEE); // Light lilac
-  static const Color primaryDarkColor = Color(0xFF6A4EA1); // Dark purple
-  static const Color accentColor = Color(0xFFE8E0FA); // Even lighter lilac
+  static const Color primaryColor = Color(0xFF9932CC);
+  static const Color lilacLight = Color(0xFFE6D9F2);
+  static const Color lilacDark = Color(0xFF4A0873);
+  static const Color accentColor = Color(0xFFFF8FB1);
+  static const Color textColor = Color(0xFF2E1A47);
   static const Color backgroundColor = Colors.white;
-  static const Color secondaryBackgroundColor = Color(0xFFF2F2F7); // Light gray
-  static const Color textPrimaryColor = Colors.black87;
-  static const Color textSecondaryColor = Colors.black54;
-  static const Color dividerColor = Color(0xFFEEEEEE);
-  static const Color onlineColor = Colors.green;
   static const Color errorColor = Colors.redAccent;
 
   // Gradients
-  static const LinearGradient primaryGradient = LinearGradient(
+  static const LinearGradient headerGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFE6DDFA), Color(0xFFD0C5ED)],
+    colors: [primaryColor, lilacDark],
   );
 
   // Text Styles
   static const TextStyle headingStyle = TextStyle(
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: FontWeight.bold,
-    color: textPrimaryColor,
+    color: Colors.white,
     fontFamily: 'Poppins',
   );
 
   static const TextStyle subheadingStyle = TextStyle(
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: FontWeight.w600,
-    color: textPrimaryColor,
+    color: Colors.white,
     fontFamily: 'Poppins',
   );
 
   static const TextStyle bodyStyle = TextStyle(
-    fontSize: 15,
-    color: textPrimaryColor,
+    fontSize: 16,
+    color: textColor,
     fontFamily: 'Poppins',
   );
 
   static const TextStyle captionStyle = TextStyle(
     fontSize: 12,
-    color: textSecondaryColor,
+    color: lilacLight,
     fontFamily: 'Poppins',
   );
 
   // Shadow
   static List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.05),
+      color: primaryColor.withOpacity(0.08),
       offset: const Offset(0, 2),
-      blurRadius: 8,
+      blurRadius: 12,
     ),
   ];
 
@@ -65,53 +62,55 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         elevation: 0,
         backgroundColor: primaryColor,
-        iconTheme: IconThemeData(color: textPrimaryColor),
+        iconTheme: IconThemeData(color: Colors.white),
         titleTextStyle: TextStyle(
-          color: textPrimaryColor,
-          fontSize: 18,
+          color: Colors.white,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
           fontFamily: 'Poppins',
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryDarkColor,
+          backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          elevation: 4,
+          shadowColor: primaryColor.withOpacity(0.2),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryDarkColor,
-          side: const BorderSide(color: primaryDarkColor),
+          foregroundColor: primaryColor,
+          side: const BorderSide(color: primaryColor),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryDarkColor,
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          foregroundColor: accentColor,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: secondaryBackgroundColor,
+        fillColor: lilacLight.withOpacity(0.2),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: const TextStyle(color: textSecondaryColor),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        hintStyle: const TextStyle(color: lilacDark),
       ),
       colorScheme: ColorScheme.fromSwatch().copyWith(
         primary: primaryColor,
-        secondary: primaryDarkColor,
+        secondary: accentColor,
         error: errorColor,
       ),
     );

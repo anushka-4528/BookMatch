@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/book.dart';
 import 'add_book_screen.dart';
 import 'package:intl/intl.dart';
+import '../utils/theme.dart';
 
 class MyBooksScreen extends StatefulWidget {
   const MyBooksScreen({super.key});
@@ -13,13 +14,6 @@ class MyBooksScreen extends StatefulWidget {
 }
 
 class _MyBooksScreenState extends State<MyBooksScreen> {
-  // Define the deep lilac color palette
-  static const Color lilacPrimary = Color(0xFF6A0DAD); // Deeper lilac
-  static const Color lilacLight = Color(0xFFE6D9F2);
-  static const Color lilacDark = Color(0xFF4A0873);
-  static const Color accentColor = Color(0xFFFF8FB1); // Light pink accent
-  static const Color textColor = Color(0xFF2E1A47);
-
   bool _isLoading = true;
   List<BookModel> userBooks = [];
 
@@ -57,7 +51,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please sign in to view your books'),
-            backgroundColor: lilacDark,
+            backgroundColor: AppTheme.lilacDark,
           ),
         );
 
@@ -121,7 +115,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
       onTap: () => _showBookDetails(book),
       child: Card(
         elevation: 5,
-        shadowColor: lilacPrimary.withOpacity(0.3),
+        shadowColor: AppTheme.lilacLight.withOpacity(0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -191,7 +185,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: textColor,
+                        color: AppTheme.textColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -201,21 +195,21 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: textColor.withOpacity(0.7),
+                        color: AppTheme.textColor.withOpacity(0.7),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: lilacLight,
+                        color: AppTheme.lilacLight,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         book.genre,
                         style: TextStyle(
                           fontSize: 10,
-                          color: lilacDark,
+                          color: AppTheme.lilacDark,
                         ),
                       ),
                     ),
@@ -231,12 +225,12 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
 
   Widget _buildPlaceholderImage() {
     return Container(
-      color: lilacLight.withOpacity(0.5),
+      color: AppTheme.lilacLight.withOpacity(0.5),
       child: Center(
         child: Icon(
           Icons.book,
           size: 40,
-          color: lilacPrimary.withOpacity(0.7),
+          color: AppTheme.lilacLight.withOpacity(0.7),
         ),
       ),
     );
@@ -281,7 +275,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       ),
                       // Edit button
                       IconButton(
-                        icon: const Icon(Icons.edit, color: lilacPrimary),
+                        icon: const Icon(Icons.edit, color: AppTheme.lilacLight),
                         onPressed: () => _editBook(book),
                         tooltip: 'Edit book',
                       ),
@@ -341,7 +335,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: textColor,
+                        color: AppTheme.textColor,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -351,7 +345,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       'by ${book.author}',
                       style: TextStyle(
                         fontSize: 16,
-                        color: textColor.withOpacity(0.8),
+                        color: AppTheme.textColor.withOpacity(0.8),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -359,7 +353,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                     // Genre and condition
                     Row(
                       children: [
-                        _buildInfoChip(book.genre, Icons.category, lilacPrimary),
+                        _buildInfoChip(book.genre, Icons.category, AppTheme.lilacLight),
                         const SizedBox(width: 10),
                         _buildInfoChip('Condition: ${book.condition}', Icons.star, Colors.amber),
                       ],
@@ -371,7 +365,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       'Added on ${DateFormat('MMMM d, yyyy').format(book.createdAt.toDate())}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: textColor.withOpacity(0.6),
+                        color: AppTheme.textColor.withOpacity(0.6),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -383,7 +377,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: textColor,
+                        color: AppTheme.textColor,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -394,7 +388,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.5,
-                        color: textColor.withOpacity(0.8),
+                        color: AppTheme.textColor.withOpacity(0.8),
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -405,7 +399,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: textColor,
+                        color: AppTheme.textColor,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -459,14 +453,14 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
           Text(
             label,
             style: TextStyle(
-              color: textColor.withOpacity(0.7),
+              color: AppTheme.textColor.withOpacity(0.7),
               fontSize: 14,
             ),
           ),
           Text(
             value,
             style: const TextStyle(
-              color: textColor,
+              color: AppTheme.textColor,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -498,7 +492,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                 ? 'Book marked as unavailable'
                 : 'Book is now available for matching',
           ),
-          backgroundColor: lilacPrimary,
+          backgroundColor: AppTheme.lilacLight,
         ),
       );
     } catch (e) {
@@ -572,7 +566,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Book deleted successfully'),
-          backgroundColor: lilacPrimary,
+          backgroundColor: AppTheme.lilacLight,
         ),
       );
     } catch (e) {
@@ -589,78 +583,23 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'My Books',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: lilacPrimary,
+        title: const Text('My Books', style: AppTheme.headingStyle),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadUserBooks,
-            tooltip: 'Refresh books',
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              lilacPrimary.withOpacity(0.1),
-              Colors.white,
-            ],
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.headerGradient,
           ),
         ),
-        child: _isLoading
-            ? _buildLoadingView()
-            : _buildBooksGrid(),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddBookScreen()),
-          ).then((_) {
-            // Refresh book list when returning from add book screen
-            _loadUserBooks();
-          });
-        },
-        backgroundColor: lilacPrimary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBooksList(),
     );
   }
 
-  Widget _buildLoadingView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            color: lilacPrimary,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Loading your books...',
-            style: TextStyle(
-              color: lilacDark,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBooksGrid() {
+  Widget _buildBooksList() {
     if (userBooks.isEmpty) {
       return Center(
         child: Column(
@@ -669,13 +608,13 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
             Icon(
               Icons.book_outlined,
               size: 80,
-              color: lilacPrimary.withOpacity(0.7),
+              color: AppTheme.lilacLight.withOpacity(0.7),
             ),
             const SizedBox(height: 20),
             Text(
               'No books yet',
               style: TextStyle(
-                color: lilacDark,
+                color: AppTheme.lilacDark,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -687,7 +626,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                 'You haven\'t added any books to your collection yet. Tap the + button to add your first book!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: textColor.withOpacity(0.7),
+                  color: AppTheme.textColor.withOpacity(0.7),
                   fontSize: 16,
                 ),
               ),
@@ -707,7 +646,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
             child: Text(
               'Your Collection (${userBooks.length})',
               style: TextStyle(
-                color: lilacDark,
+                color: AppTheme.lilacDark,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),

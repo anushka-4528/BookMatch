@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Stream to listen for auth changes
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
@@ -13,10 +15,16 @@ class AuthService extends ChangeNotifier {
   // Sign up with email and password
   Future<void> signUp({required String email, required String password}) async {
     try {
-      await _firebaseAuth.createUserWithEmailAndPassword(
+      UserCredential credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
+
+      User? user = credential.user;
+      if (user != null) {
+        await _addUserToFirestoreIfNotExists(user);
+      }
+
       notifyListeners(); // Notify UI after sign-up
     } on FirebaseAuthException catch (e) {
       throw Exception(_getFirebaseAuthError(e));
@@ -28,10 +36,16 @@ class AuthService extends ChangeNotifier {
   // Login with email and password
   Future<void> login({required String email, required String password}) async {
     try {
-      await _firebaseAuth.signInWithEmailAndPassword(
+      UserCredential credential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
+
+      User? user = credential.user;
+      if (user != null) {
+        await _addUserToFirestoreIfNotExists(user);
+      }
+
       notifyListeners(); // Notify UI after login
     } on FirebaseAuthException catch (e) {
       throw Exception(_getFirebaseAuthError(e));
@@ -53,6 +67,23 @@ class AuthService extends ChangeNotifier {
       notifyListeners(); // Notify UI after account deletion
     } catch (e) {
       throw Exception("Failed to delete account.");
+    }
+  }
+
+  // Add user to Firestore if not exists
+  Future<void> _addUserToFirestoreIfNotExists(User user) async {
+    final userDoc = _firestore.collection('users').doc(user.uid);
+    final docSnapshot = await userDoc.get();
+
+    if (!docSnapshot.exists) {
+      await userDoc.set({
+        'id': user.uid,
+        'email': user.email ?? '',
+        'name': user.displayName ?? '',
+        'phone': user.phoneNumber ?? '',
+        'photoUrl': user.photoURL ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     }
   }
 
